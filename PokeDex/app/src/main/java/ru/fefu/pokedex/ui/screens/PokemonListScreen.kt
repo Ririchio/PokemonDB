@@ -1,57 +1,77 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+
 package ru.fefu.pokedex.ui.screens
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Clear
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.CenterAlignedTopAppBar
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import ru.fefu.pokedex.ui.components.ErrorState
 import ru.fefu.pokedex.ui.components.LoadingState
 import ru.fefu.pokedex.ui.components.PokemonItem
-import ru.fefu.pokedex.ui.viewmodel.PokemonEvent
-import ru.fefu.pokedex.ui.viewmodel.PokemonUiState
+import ru.fefu.pokedex.ui.viewmodel.PokemonListViewModel
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PokemonListScreen(
-    uiState: PokemonUiState,
-    onEvent: (PokemonEvent) -> Unit,
     onPokemonClick: (String) -> Unit,
-    onFavoritesClick: () -> Unit
+    onFavoritesClick: () -> Unit,
+    viewModel: PokemonListViewModel = hiltViewModel()
 ) {
-    val searchQuery = uiState.searchQuery
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text("Pokédex", style = MaterialTheme.typography.headlineSmall) },
                 actions = {
+                    IconButton(onClick = viewModel::refresh) {
+                        Icon(Icons.Default.Refresh, contentDescription = "Refresh")
+                    }
                     IconButton(onClick = onFavoritesClick) {
                         Box {
                             Icon(
                                 Icons.Default.Favorite,
                                 contentDescription = "Favorites",
-                                tint = if (uiState.favorites.isNotEmpty())
+                                tint = if (uiState.favoriteIds.isNotEmpty())
                                     MaterialTheme.colorScheme.primary
                                 else
                                     MaterialTheme.colorScheme.onSurface
                             )
-
-                            if (uiState.favorites.isNotEmpty()) {
+                            if (uiState.favoriteIds.isNotEmpty()) {
                                 Box(
                                     modifier = Modifier
                                         .align(Alignment.TopEnd)
-                                        .offset(x = 4.dp, y = (-4).dp)
+                                        .padding(top = 2.dp, end = 2.dp)
                                         .size(8.dp)
                                         .clip(CircleShape)
                                         .background(MaterialTheme.colorScheme.primary)
@@ -69,16 +89,16 @@ fun PokemonListScreen(
                 .padding(padding)
         ) {
             OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { onEvent(PokemonEvent.SearchPokemon(it)) },
+                value = uiState.searchQuery,
+                onValueChange = viewModel::onSearchChanged,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 placeholder = { Text("Search Pokémon by name or ID...") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = "Search") },
                 trailingIcon = {
-                    if (searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { onEvent(PokemonEvent.ClearSearch) }) {
+                    if (uiState.searchQuery.isNotEmpty()) {
+                        IconButton(onClick = viewModel::clearSearch) {
                             Icon(Icons.Default.Clear, contentDescription = "Clear")
                         }
                     }
@@ -87,7 +107,7 @@ fun PokemonListScreen(
                 shape = MaterialTheme.shapes.large
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(Modifier.height(8.dp))
 
             Box(modifier = Modifier.fillMaxSize()) {
                 when {
@@ -97,23 +117,21 @@ fun PokemonListScreen(
 
                     uiState.error != null -> {
                         ErrorState(
-                            message = uiState.error,
-                            onRetry = { onEvent(PokemonEvent.LoadPokemon) }
+                            message = uiState.error ?: "Error",
+                            onRetry = viewModel::refresh
                         )
                     }
 
                     uiState.isEmpty -> {
                         Column(
                             modifier = Modifier.fillMaxSize(),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.Center
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
+                            Spacer(Modifier.height(40.dp))
                             Text("No Pokémon found", style = MaterialTheme.typography.bodyLarge)
                             if (uiState.searchQuery.isNotEmpty()) {
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Button(onClick = { onEvent(PokemonEvent.ClearSearch) }) {
-                                    Text("Clear search")
-                                }
+                                Spacer(Modifier.height(12.dp))
+                                Button(onClick = viewModel::clearSearch) { Text("Clear search") }
                             }
                         }
                     }
@@ -121,18 +139,18 @@ fun PokemonListScreen(
                     else -> {
                         LazyColumn(
                             modifier = Modifier.fillMaxSize(),
-                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp),
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                         ) {
                             items(uiState.filteredPokemon) { pokemon ->
                                 PokemonItem(
-                                    pokemon = pokemon,
-                                    isFavorite = uiState.favorites.contains(pokemon.id),
-                                    onClick = { onPokemonClick(pokemon.name) },
-                                    onFavoriteClick = {
-                                        onEvent(PokemonEvent.ToggleFavorite(pokemon.id))
-                                    }
+                                    id = pokemon.id,
+                                    name = pokemon.name,
+                                    imageUrl = pokemon.imageUrl,
+                                    isFavorite = uiState.favoriteIds.contains(pokemon.id),
+                                    onClick = { onPokemonClick(pokemon.id.toString()) },
+                                    onFavoriteClick = { viewModel.toggleFavorite(pokemon) }
                                 )
+                                Spacer(Modifier.height(8.dp))
                             }
                         }
                     }

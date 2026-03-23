@@ -22,7 +22,7 @@ object DatabaseModule {
             context,
             PokedexDatabase::class.java,
             "pokedex.db"
-        ).build()
+        ).fallbackToDestructiveMigration().build()
     }
 
     @Provides

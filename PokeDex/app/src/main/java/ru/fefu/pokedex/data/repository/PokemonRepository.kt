@@ -1,6 +1,8 @@
 package ru.fefu.pokedex.data.repository
 
-import ru.fefu.pokedex.data.api.ApiResult
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import ru.fefu.pokedex.data.api.PokeApi
 import ru.fefu.pokedex.data.local.FavoritePokemonDao
 import ru.fefu.pokedex.data.local.FavoritePokemonEntity
@@ -12,30 +14,33 @@ class PokemonRepository @Inject constructor(
     private val api: PokeApi,
     private val favoriteDao: FavoritePokemonDao
 ) {
-    suspend fun getPokemonList(): ApiResult<List<PokemonListItem>> {
-        return try {
-            val response = api.getPokemonList(limit = 50)
-            ApiResult.Success(response.results)
-        } catch (e: Exception) {
-            ApiResult.Error(e.message ?: "Network error")
-        }
+    suspend fun fetchPokemonList(limit: Int = 50, offset: Int = 0): List<PokemonListItem> {
+        return api.getPokemonList(limit = limit, offset = offset).results
     }
 
-    suspend fun getPokemonDetail(id: String): ApiResult<PokemonDetail> {
-        return try {
-            val response = api.getPokemonDetail(id)
-            ApiResult.Success(response)
-        } catch (e: Exception) {
-            ApiResult.Error(e.message ?: "Failed to load details")
-        }
+    suspend fun fetchPokemonDetail(idOrName: String): PokemonDetail {
+        return api.getPokemonDetail(idOrName)
     }
 
-    suspend fun getFavoriteIds(): Set<Int> {
-        return favoriteDao.getAllIds().toSet()
+    fun observeFavoriteIds(): Flow<Set<Int>> {
+        return favoriteDao.observeFavoriteIds()
+            .map { it.toSet() }
+            .distinctUntilChanged()
     }
 
-    suspend fun addFavorite(id: Int) {
-        favoriteDao.insert(FavoritePokemonEntity(pokemonId = id, addedAt = System.currentTimeMillis()))
+    fun observeFavorites(): Flow<List<FavoritePokemonEntity>> {
+        return favoriteDao.observeFavorites()
+    }
+
+    suspend fun addFavorite(id: Int, name: String, imageUrl: String) {
+        favoriteDao.insert(
+            FavoritePokemonEntity(
+                pokemonId = id,
+                name = name,
+                imageUrl = imageUrl,
+                addedAt = System.currentTimeMillis()
+            )
+        )
     }
 
     suspend fun removeFavorite(id: Int) {
