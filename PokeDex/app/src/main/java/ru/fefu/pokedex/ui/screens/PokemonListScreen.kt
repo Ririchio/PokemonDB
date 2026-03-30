@@ -60,12 +60,13 @@ fun PokemonListScreen(
                     IconButton(onClick = onFavoritesClick) {
                         Box {
                             Icon(
-                                Icons.Default.Favorite,
+                                imageVector = Icons.Default.Favorite,
                                 contentDescription = "Favorites",
-                                tint = if (uiState.favoriteIds.isNotEmpty())
+                                tint = if (uiState.favoriteIds.isNotEmpty()) {
                                     MaterialTheme.colorScheme.primary
-                                else
+                                } else {
                                     MaterialTheme.colorScheme.onSurface
+                                }
                             )
                             if (uiState.favoriteIds.isNotEmpty()) {
                                 Box(
@@ -131,7 +132,9 @@ fun PokemonListScreen(
                             Text("No Pokémon found", style = MaterialTheme.typography.bodyLarge)
                             if (uiState.searchQuery.isNotEmpty()) {
                                 Spacer(Modifier.height(12.dp))
-                                Button(onClick = viewModel::clearSearch) { Text("Clear search") }
+                                Button(onClick = viewModel::clearSearch) {
+                                    Text("Clear search")
+                                }
                             }
                         }
                     }
@@ -141,7 +144,10 @@ fun PokemonListScreen(
                             modifier = Modifier.fillMaxSize(),
                             contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
                         ) {
-                            items(uiState.filteredPokemon) { pokemon ->
+                            items(
+                                items = uiState.filteredPokemon,
+                                key = { it.id }
+                            ) { pokemon ->
                                 PokemonItem(
                                     id = pokemon.id,
                                     name = pokemon.name,

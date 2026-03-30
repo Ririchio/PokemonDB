@@ -2,7 +2,6 @@
 
 package ru.fefu.pokedex.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -30,7 +29,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -73,7 +71,11 @@ fun PokemonDetailScreen(
                         Icon(
                             imageVector = if (uiState.isFavorite) Icons.Filled.Favorite else Icons.Outlined.Favorite,
                             contentDescription = "Toggle favorite",
-                            tint = if (uiState.isFavorite) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
+                            tint = if (uiState.isFavorite) {
+                                MaterialTheme.colorScheme.primary
+                            } else {
+                                MaterialTheme.colorScheme.onSurface
+                            }
                         )
                     }
                 }
@@ -82,11 +84,15 @@ fun PokemonDetailScreen(
     ) { padding ->
         when {
             uiState.isLoading -> {
-                LoadingState(message = "Loading Pokemon details...")
+                LoadingState(
+                    modifier = Modifier.padding(padding),
+                    message = "Loading Pokemon details..."
+                )
             }
 
             uiState.error != null -> {
                 ErrorState(
+                    modifier = Modifier.padding(padding),
                     message = uiState.error ?: "Error",
                     onRetry = { viewModel.load(pokemonId) }
                 )
@@ -144,9 +150,15 @@ fun PokemonDetailScreen(
                         shape = MaterialTheme.shapes.large
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text("Height: ${pokemon.formattedHeight}", style = MaterialTheme.typography.bodyLarge)
+                            Text(
+                                text = "Height: ${pokemon.formattedHeight}",
+                                style = MaterialTheme.typography.bodyLarge
+                            )
                             Spacer(Modifier.height(6.dp))
-                            Text("Weight: ${pokemon.formattedWeight}", style = MaterialTheme.typography.bodyLarge)
+                            Text(
+                                text = "Weight: ${pokemon.formattedWeight}",
+                                style = MaterialTheme.typography.bodyLarge
+                            )
                         }
                     }
 

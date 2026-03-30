@@ -3,12 +3,12 @@ package ru.fefu.pokedex.ui.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
-import ru.fefu.pokedex.data.local.FavoritePokemonEntity
+import ru.fefu.pokedex.data.model.FavoritePokemonItem
 import ru.fefu.pokedex.data.repository.PokemonRepository
 import javax.inject.Inject
 
@@ -17,16 +17,13 @@ class FavoritesViewModel @Inject constructor(
     private val repository: PokemonRepository
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(FavoritesUiState())
-    val uiState: StateFlow<FavoritesUiState> = _uiState.asStateFlow()
-
-    init {
-        viewModelScope.launch {
-            repository.observeFavorites().collect { list ->
-                _uiState.update { it.copy(items = list) }
-            }
-        }
-    }
+    val uiState: StateFlow<FavoritesUiState> = repository.observeFavorites()
+        .map { favorites -> FavoritesUiState(items = favorites) }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5_000),
+            initialValue = FavoritesUiState()
+        )
 
     fun removeFavorite(id: Int) {
         viewModelScope.launch {
@@ -36,5 +33,5 @@ class FavoritesViewModel @Inject constructor(
 }
 
 data class FavoritesUiState(
-    val items: List<FavoritePokemonEntity> = emptyList()
+    val items: List<FavoritePokemonItem> = emptyList()
 )

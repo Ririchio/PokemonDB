@@ -60,15 +60,19 @@ fun FavoritesScreen(
             ) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Icon(
-                        Icons.Default.Favorite,
+                        imageVector = Icons.Default.Favorite,
                         contentDescription = "No favorites",
                         modifier = Modifier.padding(bottom = 12.dp),
                         tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.3f)
                     )
-                    Text("Нет избранных покемонов", style = MaterialTheme.typography.titleMedium, textAlign = TextAlign.Center)
+                    Text(
+                        text = "Нет избранных покемонов",
+                        style = MaterialTheme.typography.titleMedium,
+                        textAlign = TextAlign.Center
+                    )
                     Spacer(Modifier.height(8.dp))
                     Text(
-                        "Нажмите на сердечко в списке, чтобы добавить покемона в избранное",
+                        text = "Нажмите на сердечко в списке, чтобы добавить покемона в избранное",
                         style = MaterialTheme.typography.bodyMedium,
                         textAlign = TextAlign.Center,
                         color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
@@ -82,14 +86,17 @@ fun FavoritesScreen(
                     .padding(padding),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 8.dp)
             ) {
-                items(uiState.items) { fav ->
+                items(
+                    items = uiState.items,
+                    key = { it.id }
+                ) { favorite ->
                     PokemonItem(
-                        id = fav.pokemonId,
-                        name = fav.name,
-                        imageUrl = fav.imageUrl,
+                        id = favorite.id,
+                        name = favorite.name,
+                        imageUrl = favorite.imageUrl,
                         isFavorite = true,
-                        onClick = { onPokemonClick(fav.pokemonId.toString()) },
-                        onFavoriteClick = { viewModel.removeFavorite(fav.pokemonId) }
+                        onClick = { onPokemonClick(favorite.id.toString()) },
+                        onFavoriteClick = { viewModel.removeFavorite(favorite.id) }
                     )
                     Spacer(Modifier.height(8.dp))
                 }

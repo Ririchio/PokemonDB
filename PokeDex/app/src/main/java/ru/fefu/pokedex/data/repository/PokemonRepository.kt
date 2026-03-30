@@ -6,6 +6,7 @@ import kotlinx.coroutines.flow.map
 import ru.fefu.pokedex.data.api.PokeApi
 import ru.fefu.pokedex.data.local.FavoritePokemonDao
 import ru.fefu.pokedex.data.local.FavoritePokemonEntity
+import ru.fefu.pokedex.data.model.FavoritePokemonItem
 import ru.fefu.pokedex.data.model.PokemonDetail
 import ru.fefu.pokedex.data.model.PokemonListItem
 import javax.inject.Inject
@@ -28,8 +29,9 @@ class PokemonRepository @Inject constructor(
             .distinctUntilChanged()
     }
 
-    fun observeFavorites(): Flow<List<FavoritePokemonEntity>> {
+    fun observeFavorites(): Flow<List<FavoritePokemonItem>> {
         return favoriteDao.observeFavorites()
+            .map { favorites -> favorites.map(FavoritePokemonEntity::toFavoritePokemonItem) }
     }
 
     suspend fun addFavorite(id: Int, name: String, imageUrl: String) {
@@ -46,4 +48,12 @@ class PokemonRepository @Inject constructor(
     suspend fun removeFavorite(id: Int) {
         favoriteDao.deleteById(id)
     }
+}
+
+private fun FavoritePokemonEntity.toFavoritePokemonItem(): FavoritePokemonItem {
+    return FavoritePokemonItem(
+        id = pokemonId,
+        name = name,
+        imageUrl = imageUrl
+    )
 }
